@@ -19,3 +19,10 @@ class RT_HEAP_PLACEHOLDER(Structure):
     ('area',c_ulong)
     ]
 RT_HEAP =  RT_HEAP_PLACEHOLDER
+
+
+
+XENO_TASK_MAGIC = 0x55550101
+
+
+
