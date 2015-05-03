@@ -33,3 +33,30 @@ def matrol_task_spawn(task,stk_size="16384",pro=1,cpu_id=0):
 def matrolrt_task_sleep(time):
     delay = c_ulonglong(time)
     return matrolrtlib.matrolrt_task_sleep(delay)
+
+
+def matrolrt_task_set_periodic(time):
+    period = c_ulonglong(time)
+    return matrolrtlib.matrolrt_task_set_peroidic(period)
+
+
+def matrolrt_task_wait_period():
+    overrun_r = c_ulong()
+    ret = matrolrtlib.matrolrt_task_wait_period(byref(overrun_r))
+    return (ret,overrun_r)
+
+
+
+def make_period_task(time, type):
+    def _make_period_task(func):
+        def __make_period_task(ptr):
+            c = cast(ptr,POINTER(type)) # must cast the type at first step
+            matrolrt_print("%d\n",c.contents.a,init= 1)
+            matrolrt_task_set_periodic(time)
+            while True:
+                func(c)
+                (ret,overrun) = matrolrt_task_wait_period()
+                if ret < 0:
+                    matrolrt_print("task overrun :%ld\n",overrun)
+        return __make_period_task
+    return _make_period_task
