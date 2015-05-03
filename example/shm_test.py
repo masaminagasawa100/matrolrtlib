@@ -5,19 +5,28 @@ import time
 from ctypes import *
 
 
+class TESTSTRUCT(Structure):
+    _fields_ = [
+        ('a',c_int),
+        ('b',c_int)
+    ]
 
+
+
+
+
+@make_period_task(1000000000,TESTSTRUCT)
 def shm_test(i):
-    c = cast(i,POINTER(c_int)) # must cast the type at first step
-    matrolrt_print("%d\n",c.contents.value,init= 1)
-    while True:
-        ret = matrolrt_print("%d\n",c.contents.value)
-        matrolrt_task_sleep(50000000)
+    ret = matrolrt_print("a:%d,b:%d\n",i.a,i.b)
+
+    #matrolrt_task_sleep(500000000) # sleep 500us
 
 
 #shm_test(pointer(c_int(14)))
 
-
-task = matrolrttask(b"test",shm_test,pointer(c_int(14)))
+arg = TESTSTRUCT(1,3)
+print(arg.a,arg.b)
+task = matrolrttask(b"test",shm_test,pointer(arg))
 
 ret = matrol_task_spawn(task)
 while True:
