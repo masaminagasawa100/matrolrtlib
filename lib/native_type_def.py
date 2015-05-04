@@ -21,12 +21,20 @@ class MATROLRT_PIPE_RET(Structure):
 	('ret',c_int)
     ]
 
+class MATROLRT_QUEUE_RET(Structure):
+    _fields_ = [
+    ('queue_desc_ptr',c_void_p),
+	('ret',c_int)
+    ]
+
 
 SHM_CREATE_MODE = {
     'NONE':0,
     'BIND':1,
     'CREATE':2
 }
+
+QUEUE_CREATE_MODE = SHM_CREATE_MODE
 
 
 matrolrttaskentrytype = CFUNCTYPE(None,c_void_p)
@@ -60,11 +68,22 @@ class pipeinfo():
         self.pipe_ret = None
         self.fd = None
 
+class queueinfo():
+    def __init__(self,name):
+        if type(name) is str:
+            self.queue_name = name.encode() + b'_queue'
+        else:
+            self.queue_name = name + b'_queue'
+        self.queue_ret = None
+        self.create_mode = QUEUE_CREATE_MODE['NONE']
+
+
 class matrolrttask():
     def __init__(self,name,func,args):
         self.taskinfo = taskinfo(name,func,args)
         self.shminfo  = shminfo(name)
         self.pipeinfo = pipeinfo(name)
+        self.queueinfo = queueinfo(name)
 
 
 
@@ -73,6 +92,10 @@ TM_NONBLOCK = RTIME(-1)
 
 PIPE_NORMAL = c_int(0)
 PIPE_URGENT = c_int(1)
+
+Q_NORMAL = PIPE_NORMAL
+Q_URGENT = PIPE_URGENT
+Q_BROADCAST = c_int(2)
 
 LINUX    = 0
 MATROLRT = 1

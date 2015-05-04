@@ -109,14 +109,7 @@ def matrolrt_create_shm(task,size,shm_name=None):
 
 
 def matrolrt_shm_delete(task):
-    if(task.shminfo.create_mode == SHM_CREATE_MODE['BIND']):
-        print("mode is bind\n");
-        ret = matrolrtlib.matrolrt_shm_unbind(task.shminfo.shm_ret.shm_desc_ptr)
-        if ret == 0:
-            libc.free(pointer(task.shminfo.shm_ret))
-            task.shminfo.shm_ret = None
-        return ret
-    ret = matrolrtlib.matrolrt_shm_delete(task.shminfo.shm_ret.shm_desc_ptr)
+    ret = matrolrtlib.matrolrt_shm_delete(task.shminfo.shm_ret.shm_desc_ptr,task.shminfo.create_mode)
     if ret == 0:
         libc.free(pointer(task.shminfo.shm_ret))
         task.shminfo.shm_ret = None
@@ -172,7 +165,7 @@ def matrolrt_pipe_delete(task):
     return task
 
 
-def matrolrt_pipe_read(task,buf=None,size=1024,timeout=TM_INFINITE):
+def matrolrt_pipe_read(task,buf,size=1024,timeout=TM_INFINITE):
     ret = task.pipeinfo.pipe_ret
     if ret is not None and ret.pipe_desc_ptr is not None:
         return matrolrtlib.matrolrt_pipe_read(ret.pipe_desc_ptr,buf,size_t(size),timeout)
@@ -185,3 +178,58 @@ def matrolrt_pipe_write(task,buf,size=1024,mode=PIPE_NORMAL):
         return matrolrtlib.matrolrt_pipe_write(ret.pipe_desc_ptr,buf,size_t(size),mode)
     elif task.pipeinfo.fd is not None:
         return os.write(task.pipeinfo.fd,buf)
+
+
+
+############ matrolrt queue part #################
+def matrolrt_create_queue(task,size=None,queue_name=None):
+    queue_desc_ptr = None
+    _queue_name = None
+    if queue_name is not None: #override the shared memory name
+        _queue_name = queue_name
+    else:
+        _queue_name = task.queueinfo.queue_name
+
+    if type(_queue_name) is str:
+        _queue_name = _queue_name.encode()
+
+    total_size = c_size_t(size)
+    queue_ret = matrolrtlib.matrolrt_create_queue(total_size,_queue_name)
+    c = cast(queue_ret,POINTER(MATROLRT_QUEUE_RET))
+    ret = c.contents
+    print(ret.queue_desc_ptr,ret.ret)
+    if ret.queue_desc_ptr is not None:
+        ret_val = matrolrtlib.matrolrt_queue_bind(ret.queue_desc_ptr,_queue_name)
+        print(ret_val)
+        task.queueinfo.create_mode = QUEUE_CREATE_MODE['BIND']
+    else:
+        task.queueinfo.create_mode = QUEUE_CREATE_MODE['CREATE']
+
+    if ret.queue_desc_ptr is None:
+        print("create queue fail")
+    task.queueinfo.queue_ret = ret
+
+    return task
+
+def matrolrt_queue_delete(task):
+    ret = matrolrtlib.matrolrt_queue_delete(task.queueinfo.queue_ret.queue_desc_ptr,task.queueinfo.create_mode)
+    if ret == 0:
+        libc.free(pointer(task.queueinfo.queue_ret))
+        task.queueinfo.queue_ret = None
+    return ret
+
+
+def matrolrt_queue_read(task,buf,size=1024,timeout=TM_INFINITE):
+    ret = task.queueinfo.queue_ret
+    if ret is not None and ret.queue_desc_ptr is not None:
+        return matrolrtlib.matrolrt_queue_read(ret.queue_desc_ptr,buf,size_t(size),timeout)
+    else:
+        print("matrolrt_queue_read error")
+
+def matrolrt_queue_write(task,buf,size=1024,mode=Q_NORMAL):
+    ret = task.queueinfo.queue_ret
+    if ret is not None and ret.queue_desc_ptr is not None:
+        return matrolrtlib.matrolrt_queue_write(ret.queue_desc_ptr,buf,size_t(size),mode)
+    else:
+        print("matrolrt_queue_write error")
+        return -1
