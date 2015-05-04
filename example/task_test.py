@@ -29,15 +29,17 @@ def peroidic_shm_test(i):
 try:
     arg = TESTSTRUCT(1,3)
     task = matrolrttask(b"test1",peroidic_shm_test,arg)
+    task2 = matrolrttask(b"test2",aperiodic_shm_test,arg)
 
-    matrolrt_create_shm(task,1024)
-
+    task = matrolrt_task_spawn(task,cpu_id=0)
+    task2 = matrolrt_task_spawn(task2,cpu_id=1)
     while True:
-        print("test")
-        time.sleep(1)
-
+        time.sleep(10)
 except Exception as e:
-    print(e)
-    matrolrt_task_delete(task)
+    print("test")
+    print("task1 delete return :%d\n"%matrolrt_task_delete(task))
+    print("task2 delete return :%d\n"%matrolrt_task_delete(task2))
 except KeyboardInterrupt:
-    matrolrt_task_delete(task)
+    print("KeyboardInterrupt")
+    print("task1 delete return :%d\n"%matrolrt_task_delete(task))
+    print("task2 delete return :%d\n"%matrolrt_task_delete(task2))
